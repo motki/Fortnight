@@ -1,0 +1,103 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <title>Fortnight</title>
+
+    <!-- Stylesheets -->
+    <link rel="stylesheet" href="/css/photon.min.css">
+    <script type="text/javascript" src="/js/jquery.min.js"></script>
+  </head>
+  <body>
+    <div class="window">
+
+      <!-- Your app's content goes inside .window-content -->
+      <div class="window-content">
+        <div class="pane-group">
+          <div class="pane pane-sm sidebar">
+            <nav id="locations" class="nav-group">
+              <h5 class="nav-group-title">Locations</h5>
+            </nav>
+          </div>
+
+          <div class="pane">
+            <table class="table-striped">
+              <thead>
+              <tr>
+                <th>Type</th>
+                <th>Quantity</th>
+              </tr>
+              </thead>
+              <tbody id="items">
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+    </div>
+    <script type="text/javascript">
+      function getLocation(id) {
+        return new Promise(function(resolve, reject) {
+          $.ajax({
+            url: '/location/'+id,
+            dataType: 'json',
+            success: function(result) {
+              resolve(result);
+            },
+            error: function() {
+              reject(arguments);
+            }
+          });
+        });
+      }
+
+      $(function() {
+        let locations = {};
+        const $locations = $('#locations');
+        const $items = $('#items');
+
+        $locations.on('click', '.nav-group-item', function(e) {
+          e.preventDefault();
+          $(this).closest('nav').find('.active').removeClass('active');
+          $(this).addClass('active');
+          $items.html('');
+          for (let it of locations[$(this).data('id')]) {
+            $items.append(`<tr><td>${it.TypeID}</td><td>${it.Quantity}</td></tr>`);
+          }
+        });
+
+        $.ajax({
+          url: '/inventory',
+          dataType: 'json',
+          success: function(result) {
+            for (let it of result) {
+              const id = it.LocationID.toString();
+              if (locations[id] === undefined) {
+                locations[id] = [it];
+                getLocation(id).then(function(loc) {
+                  console.log(loc);
+                  let name;
+                  if (loc.Structure) {
+                    name = loc.Structure.Name;
+                  } else if (loc.Station) {
+                    name = loc.Station.Name;
+                  } else {
+                    name = loc.System.Name;
+                  }
+                  const div = $(`<span id="location-${id}" data-id="${id}" class="nav-group-item"><span class="icon icon-home"></span> ${name}</span>`);
+                  $('#locations').append(div);
+                }, function() {
+                  console.log(arguments);
+                })
+              } else {
+                locations[id].push(it);
+              }
+            }
+          },
+          error: function() {
+            console.log(arguments);
+          }
+        });
+      });
+    </script>
+  </body>
+</html>
