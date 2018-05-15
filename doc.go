@@ -1,1 +1,1 @@
-package fortnight
+package fortnight // import "github.com/motki/fortnight"

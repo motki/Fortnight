@@ -36,8 +36,9 @@ async function startServer(username, password) {
     'run',
     './cmd/fortnight/main.go',
     '-log-level=debug',
-    '-insecure-skip-verify',
-    '-server=localhost:18443',
+    // Uncomment these two lines to connect to your local motki-server.
+    // '-insecure-skip-verify',
+    // '-server=localhost:18443',
   ];
 
   if (username !== undefined && password !== undefined) {
@@ -57,6 +58,7 @@ async function startServer(username, password) {
       if (data.indexOf('listening on') >= 0) {
         started = true;
       }
+      console.log(data.toString());
     });
 
     let stopped = false;
