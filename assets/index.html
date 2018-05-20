@@ -1,102 +1,106 @@
 <!DOCTYPE html>
 <html>
-  <head>
-    <title>Fortnight</title>
+<head>
+  <title>Fortnight</title>
 
-    <link rel="stylesheet" href="/css/photon.min.css">
-    <script type="text/javascript" src="/js/jquery.min.js"></script>
-  </head>
-  <body>
-    <div class="window">
+  <link rel="stylesheet" href="/css/photon.min.css">
+  <link rel="stylesheet" href="/css/main.css">
+  <script type="text/javascript" src="/js/jquery.min.js"></script>
+</head>
+<body>
 
+<div id="overlay">
+  <div id="overlay-bg"></div>
+
+
+  <div id="loading">
+    <div class="loading-container callout window">
+      <header class="toolbar toolbar-header">
+        <h1 class="title">Loading Inventory</h1>
+      </header>
       <div class="window-content">
         <div class="pane-group">
-          <div class="pane pane-sm sidebar">
-            <nav id="locations" class="nav-group">
-              <h5 class="nav-group-title">Locations</h5>
-            </nav>
-          </div>
-
           <div class="pane">
-            <table class="table-striped">
-              <thead>
-              <tr>
-                <th colspan="2">Type</th>
-                <th>Current</th>
-                <th>Threshold</th>
-              </tr>
-              </thead>
-              <tbody id="items">
-              </tbody>
-            </table>
+            <h2 id="loading-message">Please wait...</h2>
+            <div class="loader">Loading...</div>
           </div>
         </div>
       </div>
+      <footer class="toolbar toolbar-footer">
+        <h1 class="title"></h1>
+      </footer>
     </div>
-    <script type="text/javascript">
-      function getLocation(id) {
-        return new Promise(function(resolve, reject) {
-          $.ajax({
-            url: '/location/'+id,
-            dataType: 'json',
-            success: function(result) {
-              resolve(result.data);
-            },
-            error: function() {
-              reject(arguments);
-            }
-          });
-        });
-      }
+  </div>
 
-      $(function() {
-        let locations = {};
-        const $locations = $('#locations');
-        const $items = $('#items');
 
-        $locations.on('click', '.nav-group-item', function(e) {
-          e.preventDefault();
-          $(this).closest('nav').find('.active').removeClass('active');
-          $(this).addClass('active');
-          $items.html('');
-          for (let it of locations[$(this).data('id')]) {
-            $items.append(`<tr><td>${it.TypeID}</td><td>${it.Name}</td><td>${it.CurrentLevel}</td><td>${it.MinimumLevel}</tr>`);
-          }
-        });
+  <div id="error" style="display: none">
+    <div class="error-container callout window">
+      <header class="toolbar toolbar-header">
+        <h1 class="title">Error</h1>
+      </header>
+      <div class="window-content">
+        <div class="pane-group">
+          <div class="pane">
+            <h1>Oops! <small>Looks like something is broken.</small></h1>
+            <p>Sorry about that.</p>
+            <p class="error-reason">Reason was: <span id="error-reason-text">unknown</span></p>
+          </div>
+        </div>
+      </div>
+      <footer class="toolbar toolbar-footer">
+        <h1 class="title"></h1>
+      </footer>
 
-        $.ajax({
-          url: '/inventory',
-          dataType: 'json',
-          success: function(result) {
-            for (let it of result.data) {
-              const id = it.LocationID.toString();
-              if (locations[id] === undefined) {
-                locations[id] = [it];
-                getLocation(id).then(function(loc) {
-                  console.log(loc);
-                  let name;
-                  if (loc.Structure) {
-                    name = loc.Structure.Name;
-                  } else if (loc.Station) {
-                    name = loc.Station.Name;
-                  } else {
-                    name = loc.System.Name;
-                  }
-                  const div = $(`<span id="location-${id}" data-id="${id}" class="nav-group-item"><span class="icon icon-home"></span> ${name}</span>`);
-                  $('#locations').append(div);
-                }, function() {
-                  console.log(arguments);
-                })
-              } else {
-                locations[id].push(it);
-              }
-            }
-          },
-          error: function() {
-            console.log(arguments);
-          }
-        });
-      });
-    </script>
-  </body>
+    </div>
+  </div>
+</div>
+<div id="main-window" class="window">
+  <header class="toolbar toolbar-header main-toolbar-header">
+    <div class="toolbar-actions">
+      <button class="btn btn-toolbar">
+        <span class="icon icon-cw icon-text"></span>
+        Refresh
+      </button>
+    </div>
+    <div class="toolbar-actions">
+      <button class="btn btn-toolbar">
+        <span class="icon icon-plus icon-text"></span>
+        New
+      </button>
+    </div>
+  </header>
+
+  <div class="window-content">
+    <div class="pane-group">
+      <div class="pane pane-sm sidebar">
+        <nav id="locations" class="nav-group">
+          <h5 class="nav-group-title">Locations</h5>
+        </nav>
+      </div>
+
+      <div class="pane">
+        <table class="table-striped">
+          <thead>
+          <tr>
+            <th colspan="2">Type</th>
+            <th class="item-low">Low</th>
+            <th>Current</th>
+            <th>Threshold</th>
+            <th>Updated</th>
+          </tr>
+          </thead>
+          <tbody id="items">
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  <footer class="toolbar toolbar-footer">
+    <h1 class="title"><a target="_blank" href="https://github.com/motki/fortnight">Fortnight</a> is built with open source software. <a target="_blank" href="https://motki.org">Moritake Industries</a></h1>
+  </footer>
+</div>
+<script type="text/javascript" src="/js/moment.min.js"></script>
+<script type="text/javascript" src="/js/inventory.js"></script>
+</body>
 </html>

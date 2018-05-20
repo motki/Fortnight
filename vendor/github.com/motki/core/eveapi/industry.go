@@ -4,32 +4,34 @@ import (
 	"strconv"
 	"time"
 
+	"github.com/antihax/goesi/esi"
+	"github.com/antihax/goesi/optional"
 	"github.com/shopspring/decimal"
 	"golang.org/x/net/context"
 )
 
 type IndustryJob struct {
-	JobID                int
-	InstallerID          int
-	FacilityID           int
-	LocationID           int
-	ActivityID           int
-	BlueprintID          int
-	BlueprintTypeID      int
-	BlueprintLocationID  int
-	OutputLocationID     int
-	ProductTypeID        int
-	Runs                 int
-	Cost                 decimal.Decimal
-	LicensedRuns         int
-	Probability          decimal.Decimal
-	Status               string
-	StartDate            time.Time
-	EndDate              time.Time
-	PauseDate            time.Time
-	CompletedDate        time.Time
-	CompletedCharacterID int
-	SuccessfulRuns       int
+	JobID                int             `json:"job_id"`
+	InstallerID          int             `json:"installer_id"`
+	FacilityID           int             `json:"facility_id"`
+	LocationID           int             `json:"location_id"`
+	ActivityID           int             `json:"activity_id"`
+	BlueprintID          int             `json:"blueprint_id"`
+	BlueprintTypeID      int             `json:"blueprint_type_id"`
+	BlueprintLocationID  int             `json:"blueprint_location_id"`
+	OutputLocationID     int             `json:"output_location_id"`
+	ProductTypeID        int             `json:"product_type_id"`
+	Runs                 int             `json:"runs"`
+	Cost                 decimal.Decimal `json:"cost"`
+	LicensedRuns         int             `json:"licensed_runs"`
+	Probability          decimal.Decimal `json:"probability"`
+	Status               string          `json:"status"`
+	StartDate            time.Time       `json:"start_date"`
+	EndDate              time.Time       `json:"end_date"`
+	PauseDate            time.Time       `json:"pause_date"`
+	CompletedDate        time.Time       `json:"completed_date"`
+	CompletedCharacterID int             `json:"completed_character_id"`
+	SuccessfulRuns       int             `json:"successful_runs"`
 }
 
 func (api *EveAPI) GetCorporationIndustryJobs(ctx context.Context, corpID int) (jobs []*IndustryJob, err error) {
@@ -37,9 +39,13 @@ func (api *EveAPI) GetCorporationIndustryJobs(ctx context.Context, corpID int) (
 	if err != nil {
 		return nil, err
 	}
-	var max int
-	for p := 0; p <= max; p++ {
-		res, resp, err := api.client.ESI.IndustryApi.GetCorporationsCorporationIdIndustryJobs(ctx, int32(corpID), map[string]interface{}{"includeCompleted": true, "page": int32(p)})
+	for max, p := 1, 1; p <= max; p++ {
+		res, resp, err := api.client.ESI.IndustryApi.GetCorporationsCorporationIdIndustryJobs(
+			ctx,
+			int32(corpID),
+			&esi.GetCorporationsCorporationIdIndustryJobsOpts{
+				IncludeCompleted: optional.NewBool(true),
+				Page:             optional.NewInt32(int32(p))})
 		if err != nil {
 			return nil, err
 		}

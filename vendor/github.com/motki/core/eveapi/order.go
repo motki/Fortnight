@@ -4,6 +4,8 @@ import (
 	"strconv"
 	"time"
 
+	"github.com/antihax/goesi/esi"
+	"github.com/antihax/goesi/optional"
 	"github.com/shopspring/decimal"
 	"golang.org/x/net/context"
 )
@@ -31,9 +33,8 @@ func (api *EveAPI) GetCorporationOrders(ctx context.Context, corpID int) (orders
 	if err != nil {
 		return nil, err
 	}
-	var max int
-	for p := 0; p <= max; p++ {
-		res, resp, err := api.client.ESI.MarketApi.GetCorporationsCorporationIdOrders(ctx, int32(corpID), map[string]interface{}{"page": int32(p)})
+	for max, p := 1, 1; p <= max; p++ {
+		res, resp, err := api.client.ESI.MarketApi.GetCorporationsCorporationIdOrders(ctx, int32(corpID), &esi.GetCorporationsCorporationIdOrdersOpts{Page: optional.NewInt32(int32(p))})
 		if err != nil {
 			return nil, err
 		}
@@ -71,9 +72,11 @@ func (api *EveAPI) GetCorporationOrdersHistory(ctx context.Context, corpID int) 
 	if err != nil {
 		return nil, err
 	}
-	var max int
-	for p := 0; p <= max; p++ {
-		res, resp, err := api.client.ESI.MarketApi.GetCorporationsCorporationIdOrdersHistory(ctx, int32(corpID), map[string]interface{}{"page": int32(p)})
+	for max, p := 1, 1; p <= max; p++ {
+		res, resp, err := api.client.ESI.MarketApi.GetCorporationsCorporationIdOrdersHistory(
+			ctx,
+			int32(corpID),
+			&esi.GetCorporationsCorporationIdOrdersHistoryOpts{Page: optional.NewInt32(int32(p))})
 		if err != nil {
 			return nil, err
 		}

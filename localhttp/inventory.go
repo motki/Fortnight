@@ -10,7 +10,7 @@ import (
 type inventoryItem struct {
 	*model.InventoryItem
 
-	Name string
+	Name string `json:"name"`
 }
 
 func (srv *Server) inventoryHandler(w http.ResponseWriter, req *http.Request) {

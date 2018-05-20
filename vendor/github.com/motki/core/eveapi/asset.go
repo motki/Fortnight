@@ -3,6 +3,8 @@ package eveapi
 import (
 	"strconv"
 
+	"github.com/antihax/goesi/esi"
+	"github.com/antihax/goesi/optional"
 	"golang.org/x/net/context"
 )
 
@@ -22,9 +24,11 @@ func (api *EveAPI) GetCorporationAssets(ctx context.Context, corpID int) ([]*Ass
 		return nil, err
 	}
 	var assets []*Asset
-	var max int
-	for p := 0; p <= max; p++ {
-		res, resp, err := api.client.ESI.AssetsApi.GetCorporationsCorporationIdAssets(ctx, int32(corpID), map[string]interface{}{"page": int32(p)})
+	for max, p := 1, 1; p <= max; p++ {
+		res, resp, err := api.client.ESI.AssetsApi.GetCorporationsCorporationIdAssets(
+			ctx,
+			int32(corpID),
+			&esi.GetCorporationsCorporationIdAssetsOpts{Page: optional.NewInt32(int32(p))})
 		if err != nil {
 			return nil, err
 		}

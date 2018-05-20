@@ -2,36 +2,33 @@ module github.com/motki/fortnight
 
 require (
 	github.com/BurntSushi/toml v0.3.0
-	github.com/antihax/goesi v0.0.0-20180508180315-b452d0701e85
+	github.com/antihax/goesi v0.0.0-20180519181132-a0abd622febc
 	github.com/cockroachdb/apd v1.0.0
 	github.com/coreos/bbolt v1.3.1-coreos.6
-	github.com/davecgh/go-spew v1.1.0
 	github.com/golang/glog v0.0.0-20160126235308-23def4e6c14b
 	github.com/golang/protobuf v1.1.0
 	github.com/gorilla/mux v1.6.2
 	github.com/gregjones/httpcache v0.0.0-20180305231024-9cad4c3443a7
 	github.com/jackc/fake v0.0.0-20150926172116-812a484cc733
-	github.com/jackc/pgx v0.0.0-20180513005912-f42b0f65fc3c
+	github.com/jackc/pgx v0.0.0-20180517214546-870744921917
 	github.com/lib/pq v0.0.0-20180327071824-d34b9ff171c2
 	github.com/mailru/easyjson v0.0.0-20180323154445-8b799c424f57
-	github.com/motki/core v0.0.0-20180514122843-6140e598eb0c
+	github.com/motki/core v0.0.0-20180520062050-0a6e8c4de73d
 	github.com/onsi/ginkgo v1.5.0
 	github.com/onsi/gomega v1.4.0
 	github.com/pkg/errors v0.8.0
 	github.com/pkg/profile v1.2.1
-	github.com/pmezard/go-difflib v1.0.0
 	github.com/satori/go.uuid v1.2.0
 	github.com/shopspring/decimal v0.0.0-20180319170823-2df3e6ddaf6e
 	github.com/sirupsen/logrus v1.0.5
 	github.com/stretchr/objx v0.0.0-20180426105006-a5cfa15c000a
-	github.com/stretchr/testify v1.2.1
 	golang.org/x/crypto v0.0.0-20180515001509-1a580b3eff78
-	golang.org/x/net v0.0.0-20180511174649-2491c5de3490
+	golang.org/x/net v0.0.0-20180519122554-57065200b4b0
 	golang.org/x/oauth2 v0.0.0-20180503012634-cdc340f7c179
 	golang.org/x/sync v0.0.0-20180314180146-1d60e4601c6f
 	golang.org/x/sys v0.0.0-20180514143608-7c87d13f8e83
 	golang.org/x/text v0.3.0
-	google.golang.org/genproto v0.0.0-20180514194645-7bb2a897381c
+	google.golang.org/genproto v0.0.0-20180518175338-11a468237815
 	google.golang.org/grpc v1.12.0
 	gopkg.in/airbrake/gobrake.v2 v2.0.9
 	gopkg.in/check.v1 v1.0.0-20161208181325-20d25e280405
