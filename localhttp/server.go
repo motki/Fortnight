@@ -6,18 +6,20 @@ import (
 	"github.com/gorilla/mux"
 	"github.com/motki/core/log"
 	"github.com/motki/core/proto/client"
+	"github.com/motki/fortnight/localstore"
 )
 
 type Server struct {
 	mux *mux.Router
 	cl  client.Client
 
+	store  *localstore.Store
 	logger log.Logger
 }
 
-func NewServer(cl client.Client, l log.Logger, assetsDir string) *Server {
+func NewServer(cl client.Client, l log.Logger, s *localstore.Store, assetsDir string) *Server {
 	r := mux.NewRouter()
-	srv := &Server{r, cl, l}
+	srv := &Server{r, cl, s, l}
 	r.HandleFunc("/inventory", srv.inventoryHandler)
 	r.HandleFunc("/location/{locationID}", srv.locationHandler)
 

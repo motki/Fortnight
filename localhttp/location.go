@@ -5,8 +5,12 @@ import (
 	"strconv"
 
 	"github.com/gorilla/mux"
+	"github.com/pkg/errors"
 
+	"github.com/motki/core/model"
 	"github.com/motki/core/proto/client"
+
+	"github.com/motki/fortnight/localstore"
 )
 
 func (srv *Server) locationHandler(w http.ResponseWriter, request *http.Request) {
@@ -17,13 +21,38 @@ func (srv *Server) locationHandler(w http.ResponseWriter, request *http.Request)
 		respond(w, http.StatusBadRequest, "Invalid location ID")
 		return
 	}
-	loc, err := srv.cl.GetLocation(locID)
+	var loc *model.Location
+	err := srv.store.With(func(s *localstore.Store) error {
+		b, err := s.Acquire(localstore.KindLocation)
+		if err != nil {
+			return err
+		}
+		v, err := b.Get(locID)
+		if err != nil {
+			if err != localstore.ErrNotFound {
+				return err
+			}
+		}
+		if v == nil {
+			loc, err = srv.cl.GetLocation(locID)
+			if err != nil {
+				return err
+			}
+			return b.Put(locID, loc)
+		}
+		var ok bool
+		if loc, ok = v.(*model.Location); !ok {
+			return errors.New("boom")
+		}
+		return nil
+	})
 	if err != nil {
 		if err == client.ErrNotAuthenticated {
 			respond(w, http.StatusForbidden, "Forbidden")
 			return
 		}
-		respond(w, http.StatusInternalServerError, err.Error())
+		srv.logger.Debugf("localhttp: couldnt get location from localstore: %s", err.Error())
+		respond(w, http.StatusInternalServerError, "Error in localstore")
 		return
 	}
 	respondOK(w, loc)

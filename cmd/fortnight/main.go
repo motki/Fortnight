@@ -13,6 +13,7 @@ import (
 	"github.com/motki/core/proto/client"
 
 	"github.com/motki/fortnight/localhttp"
+	"github.com/motki/fortnight/localstore"
 )
 
 var serverAddr = flag.String("server", "motki.org:18443", "Backend server host and port.")
@@ -128,7 +129,12 @@ func main() {
 		fatalf("fortnight: error initializing application environment: %s", err.Error())
 	}
 
-	srv := localhttp.NewServer(env.Client, env.Logger, *assetsDir)
+	store, err := localstore.New("data")
+	if err != nil {
+		fatalf("fortnight: error initialize localstore: %s", err.Error())
+	}
+
+	srv := localhttp.NewServer(env.Client, env.Logger, store, *assetsDir)
 	go func() {
 		err := srv.Serve()
 		if err != nil {
