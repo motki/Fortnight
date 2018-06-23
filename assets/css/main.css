@@ -12,6 +12,11 @@
     border-radius: 6px;
 }
 
+input[disabled], select[disabled], textarea[disabled]  {
+    cursor: default;
+    background-color: #eee;
+}
+
 .callout.window {
     margin: 0;
     padding: 0;
@@ -138,6 +143,38 @@
     font-size: 1.5em;
     font-weight: normal;
     color: #777;
+}
+
+#edit .edit-container.window {
+    width: 400px;
+    height: 450px;
+}
+
+#edit .edit-container.window #edit-form {
+    margin-top: 15px;
+}
+
+#edit .edit-container.window #edit-form label {
+    margin-bottom: 0;
+}
+
+#edit {
+    z-index: 50;
+    height: 90%;
+    padding: 0;
+    margin: 0;
+    display: -webkit-box;
+    display: -moz-box;
+    display: -ms-flexbox;
+    display: -webkit-flex;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.toolbar-footer .btn-group {
+    float: right;
+    margin: 10px;
 }
 
 .main-toolbar-header {

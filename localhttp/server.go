@@ -21,6 +21,7 @@ func NewServer(cl client.Client, l log.Logger, s *localstore.Store, assetsDir st
 	r := mux.NewRouter()
 	srv := &Server{r, cl, s, l}
 	r.HandleFunc("/inventory", srv.inventoryHandler)
+	r.HandleFunc("/inventory/purge", srv.inventoryPurgeHandler)
 	r.HandleFunc("/location/{locationID}", srv.locationHandler)
 
 	l.Debugf("localhttp: serving static assets from %s", assetsDir)

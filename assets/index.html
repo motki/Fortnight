@@ -12,6 +12,25 @@
 <div id="overlay">
   <div id="overlay-bg"></div>
 
+  <div id="edit" style="display: none">
+    <div class="edit-container callout window">
+      <header class="toolbar toolbar-header">
+        <h1 class="title">Edit Item</h1>
+      </header>
+      <div class="window-content">
+        <div class="pane-group">
+          <div class="pane" id="edit-form">
+          </div>
+        </div>
+      </div>
+      <footer class="toolbar toolbar-footer">
+        <div class="btn-group">
+          <button id="cancel-edit" class="btn btn-large btn-default">Cancel</button>
+          <button id="save-edit" class="btn btn-large btn-primary">Save</button>
+        </div>
+      </footer>
+    </div>
+  </div>
 
   <div id="loading">
     <div class="loading-container callout window">
@@ -50,20 +69,19 @@
       <footer class="toolbar toolbar-footer">
         <h1 class="title"></h1>
       </footer>
-
     </div>
   </div>
 </div>
 <div id="main-window" class="window">
   <header class="toolbar toolbar-header main-toolbar-header">
     <div class="toolbar-actions">
-      <button class="btn btn-toolbar">
+      <button id="refresh-data" class="btn btn-toolbar">
         <span class="icon icon-cw icon-text"></span>
         Refresh
       </button>
     </div>
     <div class="toolbar-actions">
-      <button class="btn btn-toolbar">
+      <button id="new-item" class="btn btn-toolbar">
         <span class="icon icon-plus icon-text"></span>
         New
       </button>

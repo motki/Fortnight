@@ -6,9 +6,40 @@
   const $mainWindow = $(document.getElementById('main-window'));
   const $locations = $(document.getElementById('locations'));
   const $items = $(document.getElementById('items'));
+  const $refresh = $(document.getElementById('refresh-data'));
+  const $newItem = $(document.getElementById('new-item'));
+  const $edit = $(document.getElementById('edit'));
+  const $editForm = $(document.getElementById('edit-form'));
+  const $editCancel = $(document.getElementById('cancel-edit'));
+  const $editSave = $(document.getElementById('save-edit'));
+
+  let currentModal;
+
+  const openModal = ($el) => {
+    return new Promise((resolve) => {
+      if (currentModal !== undefined) {
+        currentModal.fadeOut('fast');
+      }
+      currentModal = $el;
+      $overlay.fadeIn('fast');
+      $el.fadeIn('fast');
+      return resolve();
+    });
+  };
+
+  const hideModal = () => {
+    return new Promise((resolve) => {
+      if (currentModal !== undefined) {
+        currentModal.fadeOut('fast');
+        $overlay.fadeOut('fast');
+        currentModal = undefined;
+      }
+      return resolve();
+    })
+  };
 
   // Show an extra message if loading takes forever.
-  let ti = setTimeout(() => {
+  let tiFactory = () => setTimeout(() => {
     ti = undefined;
     if ($loading.is(':visible')) {
       $loading.find('#loading-message').fadeOut('fast', function() {
@@ -16,14 +47,21 @@
       });
     }
   }, 5000);
+  
+  let ti;
+
+  $mainWindow.on('motki:loading', () => {
+    $loading.find('#loading-message').text('Please wait...');
+    openModal($loading);
+    ti = tiFactory();
+  });
 
   $mainWindow.on('motki:loaded', () => {
     if (ti !== undefined) {
       clearTimeout(ti);
       ti = undefined;
     }
-    $loading.fadeOut('fast');
-    $overlay.fadeOut('fast');
+    hideModal();
   });
 
   $mainWindow.on('motki:error', (e, err) => {
@@ -33,17 +71,34 @@
     }
     console.debug(message);
     $errorReason.text(message);
-    if (!$overlay.is(':visible')) {
-      $overlay.fadeIn('fast');
-    }
-    if ($loading.is(':visible')) {
-      $loading.fadeOut('fast', function() {
-        $error.fadeIn('fast');
-      });
-    } else {
-      $error.fadeIn('fast');
-    }
+    openModal($error);
   });
+
+  $mainWindow.on('motki:new-item', () => {
+    if ($overlay.is(':visible')) {
+      return;
+    }
+    $editForm.html(markup.itemForm(new InventoryItem()));
+    openModal($edit);
+  });
+
+  $mainWindow.on('motki:confirm', () => {
+    if (!$editForm.is(':visible')) {
+      return;
+    }
+    $editForm.find('form').submit();
+    hideModal();
+  });
+
+  $mainWindow.on('motki:cancel', () => {
+    if (!$editForm.is(':visible')) {
+      return;
+    }
+    hideModal();
+  });
+
+  $editCancel.on('click', () => $mainWindow.trigger('motki:cancel'));
+  $editSave.on('click', () => $mainWindow.trigger('motki:confirm'));
 
   const handleError = (err) => {
     let e, ctx;
@@ -123,17 +178,41 @@
                 `<td>${it.fetchedAt.fromNow()}</td>` +
               `</tr>`,
 
-    itemBelowThreshold: '<i class="icon icon-alert item-low-alert"></i>'
+    itemBelowThreshold: '<i class="icon icon-alert item-low-alert"></i>',
+
+    itemForm:
+      (it) => `<form method="post" action="/inventory">` +
+                `<div class="form-group">` +
+                  `<label>Location</label>` +
+                  `<input type="text" class="form-control" id="loc-lookup">` +
+                `</div>` +
+                `<div class="form-group">` +
+                  `<label>Item Type</label>` +
+                  `<input type="text" class="form-control" id="typ-lookup">` +
+                `</div>` +
+                `<div class="form-group">` +
+                  `<label>Low Level Threshold</label>` +
+                  `<input type="text" class="form-control" name="minimumLevel" value="${it.minimumLevel || ''}">` +
+                `</div>` +
+                `<div class="form-group">` +
+                  `<label>Current Level</label>` +
+                  `<input type="text" class="form-control" name="currentLevel" disabled readonly value="${it.currentLevel || ''}">` +
+                `</div>` +
+                `<div class="form-group">` +
+                  `<label>Last Updated</label>` +
+                  `<input type="text" class="form-control" name="fetchedAt" disabled readonly value="${it.fetchedAt || ''}">` +
+                `</div>`
   };
 
   class InventoryItem {
     constructor(props) {
-      this.typeId = props['type_id'];
-      this.locationId = props['location_id'];
-      this.currentLevel = props['current_level'];
-      this.minimumLevel = props['minimum_level'];
-      this.fetchedAt = moment(props['fetched_at']);
-      this.name = props['name'];
+      const p = props || {};
+      this.typeId = p['type_id'];
+      this.locationId = p['location_id'];
+      this.currentLevel = p['current_level'];
+      this.minimumLevel = p['minimum_level'];
+      this.fetchedAt = moment(p['fetched_at']);
+      this.name = p['name'];
       Object.defineProperty(this, 'belowThreshold', {
         get: () => this.minimumLevel > this.currentLevel
       });
@@ -198,16 +277,10 @@
       this.locationsById = {};
       this.inventoryByLocationId = {};
       this.currentLocation = undefined;
-
-      $locations.on('click', '.nav-group-item', (e) => {
-        e.preventDefault();
-        console.log(e);
-        this.selectLocation($(e.currentTarget).data('id'));
-      });
     }
 
     fetch() {
-      return fetch('/inventory').then((its) => {
+      return this.clear().then(fetch('/inventory').then((its) => {
         const mapped = its.map((it) => new InventoryItem(it));
         console.log(mapped);
         const inventoryByLocationId = groupBy(mapped, 'locationId');
@@ -226,7 +299,7 @@
             }));
         }
         return Promise.all(fetches);
-      });
+      })).catch(handleError);
     }
 
     getLocation(locationId) {
@@ -255,11 +328,57 @@
         resolve();
       });
     }
+
+    purge() {
+      return fetch('/inventory/purge', `refreshing data`).then(() => this.fetch());
+    }
+
+    clear() {
+      return new Promise((resolve) => {
+        this.locationsById = {};
+        this.inventoryByLocationId = {};
+        this.currentLocation = undefined;
+        $locations.html('');
+        $items.html('');
+        return resolve();
+      });
+    }
   }
 
-  $(function () {
+  $(() => {
     const inventory = new Inventory();
 
+    $locations.on('click', '.nav-group-item', (e) => {
+      e.preventDefault();
+      console.log(e);
+      inventory.selectLocation($(e.currentTarget).data('id')).catch(handleError);
+    });
+
+    $refresh.on('click', () => {
+      $mainWindow.trigger('motki:loading');
+      inventory.purge().catch(handleError);
+    });
+
+    $newItem.on('click', () => {
+      $mainWindow.trigger('motki:new-item');
+    });
+
+    $mainWindow.trigger('motki:loading');
     inventory.fetch().catch(handleError);
+  });
+
+  $(document).on('keyup', (e) => {
+    switch (e.keyCode) {
+      case 13:
+        $mainWindow.trigger('motki:confirm');
+        break;
+      case 27:
+        $mainWindow.trigger('motki:cancel');
+        break;
+      default:
+        return true;
+    }
+    e.preventDefault();
+    return false;
   });
 })($, window);

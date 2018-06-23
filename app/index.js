@@ -2,8 +2,8 @@ const {app, BrowserWindow} = require('electron');
 
 function createWindow() {
   let win = new BrowserWindow({
-    width: 800,
-    height: 600,
+    width: 1024,
+    height: 768,
     webPreferences: {
       // TODO: How to handle data? Web worker? preload + disable node integration?
       nodeIntegration: false,

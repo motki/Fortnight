@@ -23,11 +23,12 @@ func (srv *Server) locationHandler(w http.ResponseWriter, request *http.Request)
 	}
 	var loc *model.Location
 	err := srv.store.With(func(s *localstore.Store) error {
+		k := localstore.IntKey(locID)
 		b, err := s.Acquire(localstore.KindLocation)
 		if err != nil {
 			return err
 		}
-		v, err := b.Get(locID)
+		v, err := b.Get(k)
 		if err != nil {
 			if err != localstore.ErrNotFound {
 				return err
@@ -38,7 +39,7 @@ func (srv *Server) locationHandler(w http.ResponseWriter, request *http.Request)
 			if err != nil {
 				return err
 			}
-			return b.Put(locID, loc)
+			return b.Put(k, loc)
 		}
 		var ok bool
 		if loc, ok = v.(*model.Location); !ok {
