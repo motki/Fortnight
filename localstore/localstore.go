@@ -14,6 +14,8 @@ import (
 	"github.com/motki/core/model"
 )
 
+const DefaultTTL = 24 * time.Hour
+
 type Kind int
 
 const (
@@ -65,10 +67,18 @@ func IntPairKey(id1, id2 int) Key {
 
 type Value interface{}
 
+type storedValue struct {
+	Value
+	CreatedAt time.Time     `json:"__created_at"`
+	TTL       time.Duration `json:"__ttl"`
+}
+
+func (v storedValue) fresh() bool {
+	return v.TTL > 0 && v.CreatedAt.After(time.Now().Add(-1*v.TTL))
+}
+
 type Store struct {
 	db *bolt.DB
-
-	tx *bolt.Tx
 }
 
 func New(dataDir string) (*Store, error) {
@@ -76,7 +86,7 @@ func New(dataDir string) (*Store, error) {
 	if err != nil {
 		return nil, err
 	}
-	return &Store{db, nil}, nil
+	return &Store{db}, nil
 }
 
 type BucketOption func(b *Bucket) error
@@ -90,23 +100,22 @@ func WithPrototype(p func() Value) BucketOption {
 	}
 }
 
-func (s *Store) RemoveBucket(kind Kind) error {
-	_, err := s.Acquire(kind)
+type Tx struct {
+	*bolt.Tx
+	//s *Store
+}
+
+func (tx *Tx) RemoveBucket(kind Kind) error {
+	_, err := tx.Acquire(kind)
 	if err != nil {
 		return err
 	}
 	// Use the tx that we know was created during Acquire.
-	return s.tx.DeleteBucket(kind.bucket())
+	return tx.DeleteBucket(kind.bucket())
 }
 
-func (s *Store) Acquire(kind Kind, opts ...BucketOption) (*Bucket, error) {
-	var err error
-	if s.tx == nil {
-		if s.tx, err = s.db.Begin(true); err != nil {
-			return nil, err
-		}
-	}
-	b, err := s.tx.CreateBucketIfNotExists(kind.bucket())
+func (tx *Tx) Acquire(kind Kind, opts ...BucketOption) (*Bucket, error) {
+	b, err := tx.CreateBucketIfNotExists(kind.bucket())
 	if err != nil {
 		return nil, err
 	}
@@ -119,31 +128,52 @@ func (s *Store) Acquire(kind Kind, opts ...BucketOption) (*Bucket, error) {
 	return bucket, nil
 }
 
-type withCallback func(*Store) error
+type withCallback func(*Tx) error
 
-func (s *Store) With(fn withCallback) error {
-	if err := fn(s); err != nil {
-		return errors.Wrap(s.Rollback(), err.Error())
+func (s *Store) Begin() (*Tx, error) {
+	t, err := s.db.Begin(true)
+	if err != nil {
+		return nil, err
 	}
-	return s.Commit()
+	return &Tx{t}, nil
 }
 
-func (s *Store) Commit() error {
-	if s.tx == nil {
-		return errors.New("no tx")
+func (s *Store) With(fn withCallback) error {
+	tx, err := s.Begin()
+	if err != nil {
+		return err
 	}
-	tx := s.tx
-	s.tx = nil
+	if err := fn(tx); err != nil {
+		return errors.Wrap(tx.Rollback(), err.Error())
+	}
 	return tx.Commit()
 }
 
-func (s *Store) Rollback() error {
-	if s.tx == nil {
-		return errors.New("no tx")
+func WithTTL(data Value, ttl time.Duration) Value {
+	return storedValue{
+		Value: data,
+		TTL:   ttl,
 	}
-	tx := s.tx
-	s.tx = nil
-	return tx.Rollback()
+}
+
+func withCreatedAt(data Value) Value {
+	if v, ok := data.(storedValue); ok {
+		v.CreatedAt = time.Now()
+		return v
+	} else {
+		return storedValue{
+			Value:     data,
+			CreatedAt: time.Now(),
+			TTL:       DefaultTTL,
+		}
+	}
+}
+
+func unwrap(data Value) (Value, bool) {
+	if v, ok := data.(storedValue); ok {
+		return v.Value, v.fresh()
+	}
+	return data, true
 }
 
 type Bucket struct {
@@ -162,17 +192,19 @@ func (bkt *Bucket) All() ([]Value, error) {
 	cur := bkt.Cursor()
 	var res []Value
 	for k, v := cur.First(); k != nil; k, v = cur.Next() {
-		val := bkt.prototype()
-		if err := json.Unmarshal(v, val); err != nil {
+		val := storedValue{Value: bkt.prototype()}
+		if err := json.Unmarshal(v, &val); err != nil {
 			return nil, err
 		}
-		res = append(res, val)
+		if v, ok := unwrap(val); ok {
+			res = append(res, v)
+		}
 	}
 	return res, nil
 }
 
 func (bkt *Bucket) Put(k Key, data Value) error {
-	b, err := json.Marshal(data)
+	b, err := json.Marshal(withCreatedAt(data))
 	if err != nil {
 		return err
 	}
@@ -186,11 +218,19 @@ func (bkt *Bucket) Get(k Key) (Value, error) {
 	if v == nil {
 		return nil, ErrNotFound
 	}
-	res := bkt.prototype()
-	if err := json.Unmarshal(v, res); err != nil {
+	sv := storedValue{Value: bkt.prototype()}
+	if err := json.Unmarshal(v, &sv); err != nil {
 		return nil, err
 	}
-	return res, nil
+	if v, ok := unwrap(sv); ok {
+		// Fresh value, return it
+		return v, nil
+	}
+	// Stale, remove it and return not found
+	if err := bkt.Delete(k); err != nil {
+		return nil, err
+	}
+	return nil, ErrNotFound
 }
 
 func (bkt *Bucket) Delete(k Key) error {

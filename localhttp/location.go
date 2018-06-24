@@ -22,7 +22,7 @@ func (srv *Server) locationHandler(w http.ResponseWriter, request *http.Request)
 		return
 	}
 	var loc *model.Location
-	err := srv.store.With(func(s *localstore.Store) error {
+	err := srv.store.With(func(s *localstore.Tx) error {
 		k := localstore.IntKey(locID)
 		b, err := s.Acquire(localstore.KindLocation)
 		if err != nil {
